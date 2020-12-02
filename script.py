@@ -3,7 +3,8 @@ import io
 import json
 
 class DataControl:
-    """ Control cytes list; argument file, fiekeys - str, path from work directory, to data file and file with keys respectively """
+    """ Control cytes list; argument file, fiekeys - str, path from work directory, 
+    to data file and file with keys respectively """
 
     def __init__(self, file, filekeys):
         print("\nLoading data. Please wait...\n")
@@ -57,6 +58,9 @@ class DataControl:
                     prompt.append(i)
                     continue
         return prompt
+    
+    def append(self, city):
+        self.data.append(city)
 
 
 
@@ -66,19 +70,46 @@ class RequestHandler(BaseHTTPRequestHandler):
     controller = DataControl('data/RU.txt', 'data/keys.txt')
     print("Server ready to work\n")
 
-    def do_GETID(self):
+    def do_GET(self):
+        if self.path == '/keys':
+            return self.reply(200, { 'Keys' : self.controller.keys})
         geoid = self.path.replace('/', '')
         target = self.controller.find_id(geoid)
         if target is None:
             self.reply(404, {'Error' : 'Not found'})
         else:
-            new_keys = list()
             for key in self.controller.keys:
                 if target[key] == '':
                     del target[key]
-                else:
-                    new_keys.append(key)
             self.reply(200, {'Result' : target})
+    
+    def do_POST(self):
+        number_of_bits = int(self.headers['Content-Length'])
+        data = self.rfile.read(number_of_bits)
+        try:
+            data = data.decode('utf-8')
+        except Exception:
+            try:
+                data = data.decode('cp1251')
+            except Exception:
+                return self.reply(400, { 'Error' : 'Bad Input Data'})
+        data = data.translate({ord(sym) : None for sym in "}{" })
+        data = data.split('/n')
+        element = dict()
+        for i in data:
+            i = i.translate({ord(sym) : None for sym in " " })
+            i = i.split(':')
+            flag = False
+            for key in self.controller.keys:
+                if i[0] == key:
+                    element[key] = i[1].split(',')
+                    flag = True
+                else:
+                    element[key] = ''
+            if flag == False:
+                return self.reply(400, { 'Error' : 'Wrong feilds'})
+        return self.reply(201, { 'Success' : 'Add new city'})
+        
         
     def do_FINDON(self):
         number = self.path.translate({ord(sym) : None for sym in '/'})
