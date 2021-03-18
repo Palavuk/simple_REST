@@ -58,8 +58,6 @@ class DataControl:
                     continue
         return prompt
 
-
-
 class RequestHandler(BaseHTTPRequestHandler):
     """ methods for task """
 
@@ -193,7 +191,6 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.wfile.flush()
         else:
             self.send_response(204)
-
 
 if __name__ == '__main__':
     HTTPServer(('', 8000), RequestHandler).serve_forever()
